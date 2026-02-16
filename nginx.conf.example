@@ -1,0 +1,23 @@
+server {
+    listen 80;
+    server_name ocr.example.com;
+
+    root /home/r/code/ocr;
+    index index.php;
+
+    client_max_body_size 20m;
+
+    location / {
+        try_files $uri /index.php;
+    }
+
+    location = /index.php {
+        fastcgi_pass unix:/run/php-fpm.sock;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        include fastcgi_params;
+    }
+
+    location = /tesseract {
+        return 403;
+    }
+}
