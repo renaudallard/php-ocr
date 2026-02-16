@@ -18,6 +18,7 @@
 #include <string.h>
 #include <strings.h>
 #include <sys/socket.h>
+#include <sys/time.h>
 #include <unistd.h>
 
 #include <tesseract/capi.h>
@@ -27,6 +28,7 @@
 #define DEFAULT_LANG    "eng"
 #define MAX_BODY        (20 * 1024 * 1024)  /* 20 MB */
 #define HEADER_BUF      8192
+#define IO_TIMEOUT_SEC  30
 
 static volatile sig_atomic_t running = 1;
 
@@ -66,12 +68,13 @@ static void send_error(int fd, int code, const char *status, const char *msg)
 {
 	char hdr[512];
 	size_t mlen = strlen(msg);
-	int hlen = snprintf(hdr, sizeof(hdr),
+	int n = snprintf(hdr, sizeof(hdr),
 		"HTTP/1.1 %d %s\r\n"
 		"Content-Type: text/plain\r\n"
 		"Content-Length: %zu\r\n"
 		"Connection: close\r\n"
 		"\r\n", code, status, mlen);
+	size_t hlen = n < 0 ? 0 : (size_t)n >= sizeof(hdr) ? sizeof(hdr) - 1 : (size_t)n;
 	send_all(fd, hdr, hlen);
 	send_all(fd, msg, mlen);
 }
@@ -79,12 +82,13 @@ static void send_error(int fd, int code, const char *status, const char *msg)
 static void send_ok(int fd, const char *text, size_t tlen)
 {
 	char hdr[512];
-	int hlen = snprintf(hdr, sizeof(hdr),
+	int n = snprintf(hdr, sizeof(hdr),
 		"HTTP/1.1 200 OK\r\n"
 		"Content-Type: text/plain; charset=utf-8\r\n"
 		"Content-Length: %zu\r\n"
 		"Connection: close\r\n"
 		"\r\n", tlen);
+	size_t hlen = n < 0 ? 0 : (size_t)n >= sizeof(hdr) ? sizeof(hdr) - 1 : (size_t)n;
 	send_all(fd, hdr, hlen);
 	send_all(fd, text, tlen);
 }
@@ -215,7 +219,13 @@ int main(int argc, char **argv)
 
 	while ((opt = getopt(argc, argv, "p:l:d:h")) != -1) {
 		switch (opt) {
-		case 'p': port = atoi(optarg); break;
+		case 'p':
+			port = atoi(optarg);
+			if (port < 1 || port > 65535) {
+				fprintf(stderr, "error: port must be 1-65535\n");
+				return 1;
+			}
+			break;
 		case 'l': lang = optarg; break;
 		case 'd': tessdata = optarg; break;
 		default:  usage(argv[0]);
@@ -279,6 +289,9 @@ int main(int argc, char **argv)
 			perror("accept");
 			break;
 		}
+		struct timeval tv = { IO_TIMEOUT_SEC, 0 };
+		setsockopt(client, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
+		setsockopt(client, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv));
 		handle_request(client, api);
 		close(client);
 	}
