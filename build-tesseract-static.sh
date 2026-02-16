@@ -170,11 +170,12 @@ if ! built libtiff.a; then
     # patch TiffConfig.cmake to create the target before importing TIFF targets.
     TIFF_CFG="$PREFIX/lib/cmake/tiff/TiffConfig.cmake"
     if [ -f "$TIFF_CFG" ] && ! grep -q 'CMath::CMath' "$TIFF_CFG"; then
-        sed '/include.*TiffTargets/i\
-if(NOT TARGET CMath::CMath)\
-    add_library(CMath::CMath IMPORTED INTERFACE)\
-    set_target_properties(CMath::CMath PROPERTIES INTERFACE_LINK_LIBRARIES "m")\
-endif()' "$TIFF_CFG" > "$TIFF_CFG.tmp"
+        awk '/include.*TiffTargets/{
+            print "if(NOT TARGET CMath::CMath)"
+            print "    add_library(CMath::CMath IMPORTED INTERFACE)"
+            print "    set_target_properties(CMath::CMath PROPERTIES INTERFACE_LINK_LIBRARIES \"m\")"
+            print "endif()"
+        }{print}' "$TIFF_CFG" > "$TIFF_CFG.tmp"
         mv "$TIFF_CFG.tmp" "$TIFF_CFG"
     fi
 fi
@@ -232,22 +233,24 @@ if ! built libleptonica.a && ! built liblept.a; then
         -DCMAKE_PREFIX_PATH="$PREFIX" \
         -DBUILD_SHARED_LIBS=OFF \
         -DBUILD_PROG=OFF \
-        -DSW_BUILD=OFF
+        -DSW_BUILD=OFF \
+        -DENABLE_OPENJPEG=OFF
     $MAKE -j"$JOBS"
     $MAKE install
     # patch LeptonicaConfig.cmake to find transitive deps for static linking
     LEPT_CFG="$PREFIX/lib/cmake/leptonica/LeptonicaConfig.cmake"
     if [ -f "$LEPT_CFG" ] && ! grep -q 'find_dependency(ZLIB)' "$LEPT_CFG"; then
-        sed '/include.*LeptonicaTargets/i\
-find_dependency(ZLIB)\
-find_dependency(JPEG)\
-find_dependency(PNG)\
-find_dependency(TIFF)\
-find_dependency(WebP CONFIG)\
-if(NOT TARGET CMath::CMath)\
-    add_library(CMath::CMath IMPORTED INTERFACE)\
-    set_target_properties(CMath::CMath PROPERTIES INTERFACE_LINK_LIBRARIES "m")\
-endif()' "$LEPT_CFG" > "$LEPT_CFG.tmp"
+        awk '/include.*LeptonicaTargets/{
+            print "find_dependency(ZLIB)"
+            print "find_dependency(JPEG)"
+            print "find_dependency(PNG)"
+            print "find_dependency(TIFF)"
+            print "find_dependency(WebP CONFIG)"
+            print "if(NOT TARGET CMath::CMath)"
+            print "    add_library(CMath::CMath IMPORTED INTERFACE)"
+            print "    set_target_properties(CMath::CMath PROPERTIES INTERFACE_LINK_LIBRARIES \"m\")"
+            print "endif()"
+        }{print}' "$LEPT_CFG" > "$LEPT_CFG.tmp"
         mv "$LEPT_CFG.tmp" "$LEPT_CFG"
     fi
 fi
