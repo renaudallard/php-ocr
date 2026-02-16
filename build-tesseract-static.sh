@@ -306,7 +306,7 @@ if [ -f "$DAEMON_SRC" ]; then
     cc -O2 -static -o "$DAEMON_BIN" "$DAEMON_SRC" \
         -I"$PREFIX/include" -L"$PREFIX/lib" \
         -ltesseract -lleptonica \
-        -lpng -ljpeg -ltiff -lwebp -lwebpmux -lsharpyuv -lgif \
+        -lpng -ltiff -ljpeg -lwebp -lwebpmux -lsharpyuv -lgif \
         -lz -lm -lpthread -lstdc++
     strip "$DAEMON_BIN"
     echo "done: $DAEMON_BIN"
