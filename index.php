@@ -1,17 +1,19 @@
 <?php
 
 $tesseract = __DIR__ . '/tesseract';
+putenv('TESSDATA_PREFIX=' . __DIR__ . '/tessdata');
 
 // handle POST: raw image body piped to tesseract via stdin (no disk writes)
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     header('Content-Type: application/json');
 
-    if ($tesseract === null) {
-        echo json_encode(['error' => 'tesseract not found.']);
+    $len = $_SERVER['CONTENT_LENGTH'] ?? 0;
+    if ($len > 20 * 1024 * 1024) {
+        echo json_encode(['error' => 'Image too large (max 20 MB).']);
         exit;
     }
 
-    $data = file_get_contents('php://input');
+    $data = file_get_contents('php://input', false, null, 0, 20 * 1024 * 1024 + 1);
     if ($data === false || $data === '') {
         echo json_encode(['error' => 'No image data received.']);
         exit;
@@ -86,7 +88,6 @@ button:hover { background: #444; }
 .side-by-side img { max-width: 50%; max-height: 80vh; border: 1px solid #333; }
 .result { background: #111; border: 1px solid #333; padding: 1rem; white-space: pre-wrap; flex: 1; min-width: 20ch; }
 .label { color: #888; margin-bottom: 0.3rem; }
-.error { color: #ff6b6b; margin-bottom: 1rem; }
 #output { margin-top: 1rem; }
 </style>
 </head>

@@ -13,15 +13,15 @@ Build the static tesseract binary (no runtime dependencies):
 
 This downloads and compiles zlib, libpng, libjpeg-turbo, libtiff, giflib,
 libwebp, leptonica, and tesseract as static libraries, then produces a single
-`./tesseract` binary.
+`./tesseract` binary and downloads the best accuracy `eng.traineddata` model
+into `./tessdata/`.
 
 Build requirements: cc, c++, make, curl, pkg-config, cmake (gmake on OpenBSD).
 
 ## Usage
 
-Place `index.php` and the `tesseract` binary in the same directory.
-Copy tessdata (e.g. `eng.traineddata`) to a location tesseract can find,
-or set `TESSDATA_PREFIX`.
+Place `index.php`, the `tesseract` binary, and the `tessdata/` directory
+in the same directory.
 
 ### Standalone
 
@@ -31,9 +31,8 @@ php -S localhost:8000
 
 ### With nginx
 
-See `nginx.conf.example`. Place `index.php` and `tesseract` in the
-document root. In a chroot, set `TESSDATA_PREFIX` in the PHP-FPM pool
-environment.
+See `nginx.conf.example`. Place `index.php`, `tesseract`, and `tessdata/`
+in the document root.
 
 ## Supported image formats
 

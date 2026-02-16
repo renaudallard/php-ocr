@@ -1,2 +1,3 @@
 build-static/
 tesseract
+tessdata/

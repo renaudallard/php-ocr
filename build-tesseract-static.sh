@@ -97,7 +97,7 @@ if ! built libz.a; then
     echo "building zlib ..."
     cd "$SRC"
     rm -rf "zlib-$ZLIB_VER"
-    tar xf "zlib-$ZLIB_VER.tar.gz"
+    tar xzf "zlib-$ZLIB_VER.tar.gz"
     cd "zlib-$ZLIB_VER"
     ./configure --prefix="$PREFIX" --static
     $MAKE -j"$JOBS"
@@ -110,7 +110,7 @@ if ! built libpng.a && ! built libpng16.a; then
     echo "building libpng ..."
     cd "$SRC"
     rm -rf "libpng-$LIBPNG_VER"
-    tar xf "libpng-$LIBPNG_VER.tar.gz"
+    tar xzf "libpng-$LIBPNG_VER.tar.gz"
     mkdir -p "libpng-$LIBPNG_VER/build"
     cd "libpng-$LIBPNG_VER/build"
     cmake .. \
@@ -130,7 +130,7 @@ if ! built libjpeg.a; then
     echo "building libjpeg-turbo ..."
     cd "$SRC"
     rm -rf "libjpeg-turbo-$JPEGTURBO_VER"
-    tar xf "libjpeg-turbo-$JPEGTURBO_VER.tar.gz"
+    tar xzf "libjpeg-turbo-$JPEGTURBO_VER.tar.gz"
     mkdir -p "libjpeg-turbo-$JPEGTURBO_VER/build"
     cd "libjpeg-turbo-$JPEGTURBO_VER/build"
     cmake .. \
@@ -149,7 +149,7 @@ if ! built libtiff.a; then
     echo "building libtiff ..."
     cd "$SRC"
     rm -rf "tiff-$TIFF_VER"
-    tar xf "tiff-$TIFF_VER.tar.gz"
+    tar xzf "tiff-$TIFF_VER.tar.gz"
     mkdir -p "tiff-$TIFF_VER/build"
     cd "tiff-$TIFF_VER/build"
     cmake .. \
@@ -185,7 +185,7 @@ if ! built libgif.a; then
     echo "building giflib ..."
     cd "$SRC"
     rm -rf "giflib-$GIFLIB_VER"
-    tar xf "giflib-$GIFLIB_VER.tar.gz"
+    tar xzf "giflib-$GIFLIB_VER.tar.gz"
     cd "giflib-$GIFLIB_VER"
     $MAKE -j"$JOBS" libgif.a
     mkdir -p "$PREFIX/lib" "$PREFIX/include"
@@ -199,7 +199,7 @@ if ! built libwebp.a; then
     echo "building libwebp ..."
     cd "$SRC"
     rm -rf "libwebp-$WEBP_VER"
-    tar xf "libwebp-$WEBP_VER.tar.gz"
+    tar xzf "libwebp-$WEBP_VER.tar.gz"
     mkdir -p "libwebp-$WEBP_VER/build"
     cd "libwebp-$WEBP_VER/build"
     cmake .. \
@@ -224,7 +224,7 @@ if ! built libleptonica.a && ! built liblept.a; then
     echo "building leptonica ..."
     cd "$SRC"
     rm -rf "leptonica-$LEPTON_VER"
-    tar xf "leptonica-$LEPTON_VER.tar.gz"
+    tar xzf "leptonica-$LEPTON_VER.tar.gz"
     mkdir -p "leptonica-$LEPTON_VER/build"
     cd "leptonica-$LEPTON_VER/build"
     cmake .. \
@@ -257,7 +257,7 @@ fi
 echo "building tesseract ..."
 cd "$SRC"
 rm -rf "tesseract-$TESS_VER"
-tar xf "tesseract-$TESS_VER.tar.gz"
+tar xzf "tesseract-$TESS_VER.tar.gz"
 mkdir -p "tesseract-$TESS_VER/build"
 cd "tesseract-$TESS_VER/build"
 cmake .. \
@@ -271,6 +271,14 @@ cmake .. \
     -DOPENMP_BUILD=OFF
 $MAKE -j"$JOBS"
 
+# --- download tessdata (best model) ---
+
+TESSDATA_DIR="$BUILDDIR/../tessdata"
+mkdir -p "$TESSDATA_DIR"
+fetch "https://github.com/tesseract-ocr/tessdata_best/raw/main/eng.traineddata" \
+    "eng.traineddata"
+cp "$SRC/eng.traineddata" "$TESSDATA_DIR/eng.traineddata"
+
 # --- output ---
 
 OUTBIN="$BUILDDIR/../tesseract"
@@ -282,3 +290,4 @@ echo "done: $OUTBIN"
 file "$OUTBIN"
 ldd "$OUTBIN" 2>&1 || true
 ls -lh "$OUTBIN"
+echo "tessdata: $TESSDATA_DIR/eng.traineddata"
