@@ -1,9 +1,8 @@
 <?php
 
-$tesseract = __DIR__ . '/tesseract';
-putenv('TESSDATA_PREFIX=' . __DIR__ . '/tessdata');
+$daemon_url = 'http://127.0.0.1:9321';
 
-// handle POST: raw image body piped to tesseract via stdin (no disk writes)
+// handle POST: send raw image to tesseract-daemon via HTTP
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     header('Content-Type: application/json');
 
@@ -30,30 +29,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    // pipe image to tesseract stdin, read text from stdout
-    $proc = proc_open(
-        [$tesseract, 'stdin', 'stdout'],
-        [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']],
-        $pipes
-    );
-
-    if (!is_resource($proc)) {
-        echo json_encode(['error' => 'Failed to start tesseract.']);
-        exit;
-    }
-
-    fwrite($pipes[0], $data);
-    fclose($pipes[0]);
+    // send image to tesseract-daemon
+    $ctx = stream_context_create(['http' => [
+        'method' => 'POST',
+        'header' => "Content-Type: application/octet-stream\r\nContent-Length: " . strlen($data) . "\r\n",
+        'content' => $data,
+        'timeout' => 120,
+    ]]);
     unset($data);
 
-    $text = stream_get_contents($pipes[1]);
-    fclose($pipes[1]);
-    fclose($pipes[2]);
+    $text = @file_get_contents($daemon_url, false, $ctx);
 
-    $ret = proc_close($proc);
-
-    if ($ret !== 0) {
-        echo json_encode(['error' => 'Tesseract failed (exit code ' . $ret . ').']);
+    if ($text === false) {
+        echo json_encode(['error' => 'OCR daemon unavailable.']);
         exit;
     }
 

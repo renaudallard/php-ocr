@@ -273,6 +273,7 @@ cmake .. \
     -DCMAKE_EXE_LINKER_FLAGS="-static" \
     -DOPENMP_BUILD=OFF
 $MAKE -j"$JOBS"
+$MAKE install
 
 # --- download tessdata (best model) ---
 
@@ -282,7 +283,7 @@ fetch "https://github.com/tesseract-ocr/tessdata_best/raw/main/eng.traineddata" 
     "eng.traineddata"
 cp "$SRC/eng.traineddata" "$TESSDATA_DIR/eng.traineddata"
 
-# --- output ---
+# --- output: tesseract CLI ---
 
 OUTBIN="$BUILDDIR/../tesseract"
 cp "$SRC/tesseract-$TESS_VER/build/bin/tesseract" "$OUTBIN"
@@ -294,3 +295,23 @@ file "$OUTBIN"
 ldd "$OUTBIN" 2>&1 || true
 ls -lh "$OUTBIN"
 echo "tessdata: $TESSDATA_DIR/eng.traineddata"
+
+# --- build tesseract-daemon ---
+
+echo ""
+echo "building tesseract-daemon ..."
+DAEMON_SRC="$BUILDDIR/../tesseract-daemon.c"
+DAEMON_BIN="$BUILDDIR/../tesseract-daemon"
+if [ -f "$DAEMON_SRC" ]; then
+    cc -O2 -static -o "$DAEMON_BIN" "$DAEMON_SRC" \
+        -I"$PREFIX/include" -L"$PREFIX/lib" \
+        -ltesseract -lleptonica \
+        -lpng -ljpeg -ltiff -lwebp -lwebpmux -lsharpyuv -lgif \
+        -lz -lm -lpthread -lstdc++
+    strip "$DAEMON_BIN"
+    echo "done: $DAEMON_BIN"
+    file "$DAEMON_BIN"
+    ls -lh "$DAEMON_BIN"
+else
+    echo "warning: $DAEMON_SRC not found, skipping daemon build"
+fi
