@@ -99,7 +99,7 @@ if ! built libz.a; then
     rm -rf "zlib-$ZLIB_VER"
     tar xzf "zlib-$ZLIB_VER.tar.gz"
     cd "zlib-$ZLIB_VER"
-    ./configure --prefix="$PREFIX" --static
+    sh ./configure --prefix="$PREFIX" --static
     $MAKE -j"$JOBS"
     $MAKE install
 fi
