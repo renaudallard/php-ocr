@@ -1,8 +1,6 @@
 <?php
 
-$daemon_url = 'http://127.0.0.1:9321';
-
-// handle POST: send raw image to tesseract-daemon via HTTP
+// handle POST: send raw image to tesseract-daemon
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     header('Content-Type: application/json');
 
@@ -29,16 +27,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    // send image to tesseract-daemon
-    $ctx = stream_context_create(['http' => [
-        'method' => 'POST',
-        'header' => "Content-Type: application/octet-stream\r\nContent-Length: " . strlen($data) . "\r\n",
-        'content' => $data,
-        'timeout' => 120,
-    ]]);
+    // send image to tesseract-daemon via raw socket (no curl/allow_url_fopen needed)
+    $fp = @fsockopen('127.0.0.1', 9321, $errno, $errstr, 5);
+    if (!$fp) {
+        echo json_encode(['error' => 'OCR daemon unavailable.']);
+        exit;
+    }
+    stream_set_timeout($fp, 120);
+
+    $req = "POST / HTTP/1.1\r\n"
+         . "Host: 127.0.0.1:9321\r\n"
+         . "Content-Type: application/octet-stream\r\n"
+         . "Content-Length: " . strlen($data) . "\r\n"
+         . "Connection: close\r\n"
+         . "\r\n";
+    fwrite($fp, $req);
+    fwrite($fp, $data);
     unset($data);
 
-    $text = @file_get_contents($daemon_url, false, $ctx);
+    $response = '';
+    while (!feof($fp))
+        $response .= fread($fp, 8192);
+    fclose($fp);
+
+    // split HTTP response header from body
+    $parts = explode("\r\n\r\n", $response, 2);
+    $text = $parts[1] ?? false;
 
     if ($text === false) {
         echo json_encode(['error' => 'OCR daemon unavailable.']);

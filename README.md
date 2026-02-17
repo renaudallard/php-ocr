@@ -53,6 +53,9 @@ Start the daemon, then serve the PHP frontend:
 php -S localhost:8000
 ```
 
+The PHP frontend uses `fsockopen` to connect to the daemon directly,
+so it works with `allow_url_fopen` disabled and without the curl extension.
+
 ### With nginx
 
 See `nginx.conf.example`. Ensure `tesseract-daemon` is running before
