@@ -315,3 +315,19 @@ if [ -f "$DAEMON_SRC" ]; then
 else
     echo "warning: $DAEMON_SRC not found, skipping daemon build"
 fi
+
+# --- build tesseract-supervisor ---
+
+echo ""
+echo "building tesseract-supervisor ..."
+SUPERVISOR_SRC="$BUILDDIR/../tesseract-supervisor.c"
+SUPERVISOR_BIN="$BUILDDIR/../tesseract-supervisor"
+if [ -f "$SUPERVISOR_SRC" ]; then
+    cc -O2 -o "$SUPERVISOR_BIN" "$SUPERVISOR_SRC"
+    strip "$SUPERVISOR_BIN"
+    echo "done: $SUPERVISOR_BIN"
+    file "$SUPERVISOR_BIN"
+    ls -lh "$SUPERVISOR_BIN"
+else
+    echo "warning: $SUPERVISOR_SRC not found, skipping supervisor build"
+fi

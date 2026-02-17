@@ -16,6 +16,7 @@ libwebp, leptonica, and tesseract as static libraries, then produces:
 
 - `./tesseract` — standalone CLI binary
 - `./tesseract-daemon` — persistent OCR daemon
+- `./tesseract-supervisor` — supervisor that restarts the daemon on crashes
 - `./tessdata/eng.traineddata` — best accuracy English model
 
 Build requirements: cc, c++, make, curl, pkg-config, cmake (gmake on OpenBSD).
@@ -37,6 +38,23 @@ Options:
 - `-d tessdata` — Tessdata directory (default `TESSDATA_PREFIX` env or `./tessdata`)
 
 The daemon listens on `127.0.0.1:9321` and handles one request at a time.
+
+### Using the supervisor
+
+The supervisor monitors the daemon and restarts it automatically on crashes:
+
+```
+./tesseract-supervisor -d ./tessdata
+```
+
+All arguments are passed through to `tesseract-daemon`. The supervisor:
+
+- Restarts the daemon on crashes (non-zero exit or signal death)
+- Waits 1 second between restarts
+- Gives up after 5 crashes within 60 seconds
+- Forwards SIGINT/SIGTERM to the daemon for clean shutdown
+
+For production use, run the supervisor instead of the daemon directly.
 
 ### Testing with curl
 
