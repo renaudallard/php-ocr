@@ -1,4 +1,5 @@
 build-static/
 tesseract
 tesseract-daemon
+tesseract-supervisor
 tessdata/
