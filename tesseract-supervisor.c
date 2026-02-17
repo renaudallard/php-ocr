@@ -22,6 +22,7 @@
 
 #define MAX_CRASHES	5
 #define CRASH_WINDOW	60	/* seconds */
+#define SHUTDOWN_TIMEOUT 3	/* seconds before SIGKILL */
 
 static volatile sig_atomic_t got_signal = 0;
 static volatile pid_t child_pid = 0;
@@ -79,7 +80,7 @@ int main(int argc, char **argv)
 	struct sigaction sa;
 	memset(&sa, 0, sizeof(sa));
 	sa.sa_handler = forward_signal;
-	sa.sa_flags = SA_RESTART;
+	sa.sa_flags = 0;  /* no SA_RESTART: let waitpid return EINTR */
 	sigaction(SIGINT, &sa, NULL);
 	sigaction(SIGTERM, &sa, NULL);
 
@@ -105,12 +106,35 @@ int main(int argc, char **argv)
 		child_pid = pid;
 		got_signal = 0;
 
-		int status;
-		while (waitpid(pid, &status, 0) < 0) {
+		int status = 0;
+		int reaped = 0;
+
+		while (!reaped) {
+			pid_t ret = waitpid(pid, &status, 0);
+			if (ret > 0) {
+				reaped = 1;
+				break;
+			}
 			if (errno != EINTR) {
 				perror("supervisor: waitpid");
 				free(child_argv);
 				return 1;
+			}
+			if (!got_signal)
+				continue;
+			/* signal forwarded — wait with timeout, then escalate */
+			for (int i = 0; i < SHUTDOWN_TIMEOUT && !reaped; i++) {
+				sleep(1);
+				ret = waitpid(pid, &status, WNOHANG);
+				if (ret > 0)
+					reaped = 1;
+			}
+			if (!reaped) {
+				fprintf(stderr,
+					"supervisor: daemon did not exit, sending SIGKILL\n");
+				kill(pid, SIGKILL);
+				waitpid(pid, &status, 0);
+				reaped = 1;
 			}
 		}
 		child_pid = 0;

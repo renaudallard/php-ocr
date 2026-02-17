@@ -275,9 +275,15 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-	signal(SIGINT, handle_signal);
-	signal(SIGTERM, handle_signal);
-	signal(SIGPIPE, SIG_IGN);
+	struct sigaction sa_exit, sa_ign;
+	memset(&sa_exit, 0, sizeof(sa_exit));
+	sa_exit.sa_handler = handle_signal;
+	sa_exit.sa_flags = 0;  /* no SA_RESTART: let accept() return EINTR */
+	sigaction(SIGINT, &sa_exit, NULL);
+	sigaction(SIGTERM, &sa_exit, NULL);
+	memset(&sa_ign, 0, sizeof(sa_ign));
+	sa_ign.sa_handler = SIG_IGN;
+	sigaction(SIGPIPE, &sa_ign, NULL);
 
 	fprintf(stderr, "listening on 127.0.0.1:%d\n", port);
 
