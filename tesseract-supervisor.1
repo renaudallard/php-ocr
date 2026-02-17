@@ -1,0 +1,82 @@
+.Dd February 17, 2026
+.Dt TESSERACT-SUPERVISOR 1
+.Os
+.Sh NAME
+.Nm tesseract-supervisor
+.Nd monitor and restart tesseract-daemon on crashes
+.Sh SYNOPSIS
+.Nm
+.Op Ar tesseract-daemon args ...
+.Sh DESCRIPTION
+.Nm
+is a process supervisor for
+.Xr tesseract-daemon 1 .
+It forks and executes
+.Nm tesseract-daemon ,
+monitors it, and automatically restarts it if it crashes.
+All arguments are passed through to the daemon.
+.Pp
+The daemon path is derived from the location of
+.Nm
+itself.
+If
+.Nm
+is invoked as
+.Pa /usr/local/bin/tesseract-supervisor ,
+it will execute
+.Pa /usr/local/bin/tesseract-daemon .
+If invoked without a path, it looks for
+.Nm tesseract-daemon
+via
+.Ev PATH .
+.Sh BEHAVIOR
+On a clean exit (exit code 0) from the daemon,
+.Nm
+exits 0.
+.Pp
+On a crash (signal death or non-zero exit code),
+.Nm
+logs the event to standard error, waits 1 second, and restarts the daemon.
+.Pp
+If the daemon crashes 5 times within 60 seconds,
+.Nm
+gives up and exits with an error.
+.Pp
+On receipt of
+.Dv SIGINT
+or
+.Dv SIGTERM ,
+.Nm
+forwards the signal to the daemon.
+If the daemon does not exit within 3 seconds, it is killed with
+.Dv SIGKILL .
+.Nm
+then exits 0.
+.Sh EXAMPLES
+Start the supervisor with default settings:
+.Bd -literal -offset indent
+tesseract-supervisor -d ./tessdata
+.Ed
+.Pp
+Start on a custom port:
+.Bd -literal -offset indent
+tesseract-supervisor -p 8000 -d /usr/local/share/tessdata
+.Ed
+.Pp
+Stop cleanly:
+.Bd -literal -offset indent
+kill $(pgrep tesseract-supervisor)
+.Ed
+.Sh DIAGNOSTICS
+.Nm
+logs all events to standard error with a
+.Qq supervisor:
+prefix.
+.Pp
+Exit status is 0 on clean shutdown, or 1 on error
+(including rapid crash protection).
+.Sh SEE ALSO
+.Xr tesseract-daemon 1 ,
+.Xr tesseract 1
+.Sh AUTHORS
+.An Renaud Allard
